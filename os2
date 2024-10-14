@@ -1,3 +1,77 @@
+//Multithreading
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<pthread.h>
+
+void *calcPrime(void *inp){
+	int *input = (int *)inp;
+	int flags = 0;	
+	for(int i=2; i<=*input/2; i++){
+		if(*input%i == 0){
+			flags++;
+			break;
+		}
+	}
+	if(flags == 0){
+		printf("%d is a prime number \n",*input);
+	}else{
+		printf("%d is not a prime number \n",*input);
+	}
+}
+
+void *armstrong(void *inp){
+	int *input = (int *)inp;
+	int temp = *input;
+	int n = 0;
+	float res = 0.0;
+	for(temp = *input; temp!=0; ++n){
+		temp/=10;
+	}
+	for(temp = *input; temp!=0; temp/=10){
+		int remainder = temp % 10;
+		int tempres = 1;
+		for(int j=0; j<n; j++){
+			tempres *= remainder;
+		}
+		res += tempres;
+	}
+	if((int)res == *input){
+		printf("%d is an armstrong \n", *input);
+	}else{
+		printf("%d is not an armstrong \n", *input);
+	}
+}
+
+void *factorial(void *inp){
+	int *input = (int *)inp;
+	long long int res = 1;
+	for(int i=1; i<=*input; i++){
+		res*=i;
+	}
+	printf("Factorial of %d is %lld \n", *input, res);
+}
+
+int main(){
+	pthread_t threads[6];
+	int n;
+	while(1>0){
+		printf("Enter your value:- \n");
+		scanf("%d", &n);
+		pthread_create(&threads[0], NULL, calcPrime, (void *)&n);
+		pthread_create(&threads[1], NULL, factorial, (void *)&n);
+		pthread_create(&threads[2], NULL, armstrong, (void *)&n);
+		pthread_join(threads[0], NULL);
+		pthread_join(threads[1], NULL);
+		pthread_join(threads[2], NULL);
+	}
+	exit(0);
+}
+
+
+
+
 Pthread
 
 
