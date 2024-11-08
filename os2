@@ -1606,6 +1606,7 @@ return 0;
 
 
 Writer with Priority
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<sys/types.h>
@@ -1678,6 +1679,7 @@ return 0;
 
 
 Reader with Priority
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<sys/types.h>
@@ -2371,7 +2373,7 @@ return 0;
 
 
 
-
+_______________________________________________________________________________________________________________________________________________________________________________________________________________
 //****//
 
 Disk Scheduling
