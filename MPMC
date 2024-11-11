@@ -1,0 +1,93 @@
+1.NVIC 
+begin 4 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+ if (GPIO_Pin==GPIO_PIN_9)
+  {
+   HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
+  }
+}
+
+2.ADC
+begin 0 
+uint16_t adcres;
+begin 2 
+HAL_ADCEx_Calibration_Start(&hadc1);
+begin 3 
+HAL_ADC_Start(&hadc1);
+HAL_ADC_PollForConversion(&hadc1,10);
+adcres=HAL_ADC_GetValue(&hadc1);
+
+3.USART 
+begin 0
+unit8_t rxd[7],txd[7]='HALLOWS',i=0;
+begin 2 
+while(i<7)
+{
+  HAL_UART_Transmit(&huart1,&txt[i],1,100);
+  HAL_UART_Receive(&huart1,&rxd[i],1,100);
+  i++;
+}
+
+4.PWM
+begin 1 
+uint32_t dutycycle=32000;
+begin 2
+HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
+TIM2->CCR1 = dutycycle ;
+
+5.STEPPER MOTOR 
+begin 1
+uint8_t i,j,rotate;
+begin 2 
+for(i=0;i<25;i++)
+{
+ rotate=1;
+ for(j=0;j<4;j++)
+  {
+    GPIOA->ODR = rotate;
+    HAL_Delay(20);
+    rotate=rotate<<1;
+  }
+}
+
+6.TIMER DELAY 
+begin 2
+HAL_TIM_Base_Start(&htim2);
+begin 3
+TIM2->SR=TIM2->SR&(N1);
+while((TIM2->SR&1)==0);
+HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
+
+
+7.KEYPAD
+
+% After Begin 1
+uint8_t key;
+% After Begin 3
+HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,0);
+HAL_GPIO_WritePin(GPIOB,GPIO_PIN_13,1);
+if (HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_14) == 0)
+{
+ HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 0);
+ key=l;
+}
+else if (HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_15)==0)
+{
+HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+Key=2;
+}
+
+
+HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,1);
+HAL_GPIO_WritePin(GPIOB,GPIO_PIN_13,0);
+if (HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_14) == 0)
+{
+ HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13,0);
+ key=3;
+}
+else if (HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_15)==0)
+{
+HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13,1);
+Key=4;
+}
