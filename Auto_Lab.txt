@@ -1,0 +1,518 @@
+1. Velocity based motion model 
+
+% Initial robot pose [x, y, theta] and goal [x, y]
+robot_pose = [0, 0, 0]; % [x, y, theta]
+goal = [10, 10]; % Goal position
+dt = 0.1; % Time step
+
+% Obstacles: [x, y] positions
+obstacles = [3, 4; 5, 5; 8, 7];  % Add more obstacles as needed
+safe_distance = 2.0;  % Safe distance to avoid obstacles
+turn_angle_gain = 3;  % How aggressively to turn when near an obstacle
+linear_velocity = 0.5; % Constant linear velocity
+
+% Simulation setup
+figure;
+axis equal;
+hold on;
+plot(goal(1), goal(2), 'rx', 'MarkerSize', 10, 'LineWidth', 2); % Plot goal
+plot(obstacles(:,1), obstacles(:,2), 'ko', 'MarkerSize', 10, 'LineWidth', 2); % Plot obstacles
+xlim([-1 11]);
+ylim([-1 11]);
+xlabel('X Position');
+ylabel('Y Position');
+title('Velocity Based Navigation Algorithm');
+
+% Main loop: robot moves towards the goal
+while norm(robot_pose(1:2) - goal(1:2)) > 0.2
+    % Goal attraction (desired movement direction)
+    direction_to_goal = atan2(goal(2) - robot_pose(2), goal(1) - robot_pose(1));
+    error_angle = direction_to_goal - robot_pose(3);
+    
+    % Control parameters
+    angular_velocity = 2 * error_angle; % Angular velocity to adjust heading
+    
+    % Obstacle avoidance by adjusting the path before it's too close
+    for i = 1:size(obstacles, 1)
+        distance_to_obstacle = norm(robot_pose(1:2) - obstacles(i, :));
+        if distance_to_obstacle < safe_distance
+            % Calculate angle to the obstacle
+            direction_to_obstacle = atan2(obstacles(i, 2) - robot_pose(2), obstacles(i, 1) - robot_pose(1));
+            angle_diff = direction_to_obstacle - robot_pose(3);
+            
+            % If the robot is facing the obstacle directly, plan to turn
+            if abs(angle_diff) < pi/4  % Facing the obstacle within a threshold
+                if angle_diff > 0
+                    angular_velocity = angular_velocity - turn_angle_gain;  % Turn left
+                else
+                    angular_velocity = angular_velocity + turn_angle_gain;  % Turn right
+                end
+            end
+        end
+    end
+    
+    % Update pose (motion model)
+    robot_pose(3) = robot_pose(3) + angular_velocity * dt; % Update orientation (theta)
+    robot_pose(1) = robot_pose(1) + linear_velocity * cos(robot_pose(3)) * dt; % Update x position
+    robot_pose(2) = robot_pose(2) + linear_velocity * sin(robot_pose(3)) * dt; % Update y position
+    
+    % Plot the robot's position
+    plot(robot_pose(1), robot_pose(2), 'bo', 'MarkerSize', 6, 'LineWidth', 2); % Plot current position
+    drawnow;
+    
+    % Display velocities in the console
+    fprintf('Linear Velocity: %.2f m/s, Angular Velocity: %.2f rad/s\n', linear_velocity, angular_velocity);
+    
+    % Pause to visualize in real-time
+    pause(dt);
+end
+
+disp('Goal reached!');
+
+2. Odometry based motion model 
+
+% Robot Navigation to a Goal using Odometry-based Motion Model with Multiple Obstacle Avoidance
+
+% Initialize the robot's pose: [x, y, theta]
+robot_pose = [0, 0, 0]; % Starting at the origin facing right (0 radians)
+goal = [10, 10]; % Goal position
+dt = 0.1; % Time step
+linear_velocity = 0.5; % Constant linear velocity
+
+% Define multiple obstacles as a matrix where each row is an obstacle [x, y]
+obstacles = [5, 5;   % Obstacle 1
+             7, 8;   % Obstacle 2
+             4, 3];  % Obstacle 3
+
+% Define the radius of each obstacle
+obstacle_radius = 0.5; % Radius of the obstacles
+
+% Initialize the plot
+figure;
+hold on;
+grid on;
+xlim([-1, 12]); % Set x-axis limits
+ylim([-1, 12]); % Set y-axis limits
+title('Robot Navigation to Goal with Multiple Obstacle Avoidance');
+xlabel('X Position');
+ylabel('Y Position');
+plot(goal(1), goal(2), 'rx', 'MarkerSize', 10, 'LineWidth', 2); % Plot the goal
+
+% Plot all obstacles
+for i = 1:size(obstacles, 1)
+    plot(obstacles(i, 1), obstacles(i, 2), 'ko', 'MarkerSize', 10, 'LineWidth', 2); % Plot each obstacle
+end
+
+% Navigation loop
+while norm(robot_pose(1:2) - goal(1:2)) > 0.2
+    % Calculate the direction to the goal
+    direction_to_goal = atan2(goal(2) - robot_pose(2), goal(1) - robot_pose(1));
+    
+    % Calculate the angle error
+    error_angle = direction_to_goal - robot_pose(3);
+    
+    % Normalize the error angle to the range [-pi, pi]
+    error_angle = atan2(sin(error_angle), cos(error_angle));
+    
+    % Initialize a variable to track whether an obstacle is detected
+    obstacle_detected = false;
+
+    % Check distances to all obstacles
+    for i = 1:size(obstacles, 1)
+        distance_to_obstacle = norm(robot_pose(1:2) - obstacles(i, :));
+        
+        % If the robot is close to an obstacle, adjust its path
+        if distance_to_obstacle < obstacle_radius + 0.5 % 0.5 is the safety distance
+            obstacle_detected = true; % Set flag
+            % Calculate the avoidance direction
+            avoidance_direction = atan2(robot_pose(2) - obstacles(i, 2), robot_pose(1) - obstacles(i, 1));
+            % Adjust the error angle to steer away from the obstacle
+            error_angle = error_angle + pi/4; % Turn 45 degrees away from the obstacle
+        end
+    end
+
+    % Calculate the angular velocity
+    angular_velocity = 2 * error_angle; % Proportional control for angular velocity
+
+    % Update the robot's pose
+    robot_pose(3) = robot_pose(3) + angular_velocity * dt; % Update theta
+    robot_pose(1) = robot_pose(1) + linear_velocity * cos(robot_pose(3)) * dt; % Update x
+    robot_pose(2) = robot_pose(2) + linear_velocity * sin(robot_pose(3)) * dt; % Update y
+
+    % Plot the robot's current position
+    plot(robot_pose(1), robot_pose(2), 'bo', 'MarkerSize', 5);
+    pause(dt); % Pause for a moment to visualize the motion
+end
+
+disp('Goal reached!');
+hold off; % Release the plot hold
+
+3. Probabilistic range sensor model 
+
+% Parameters
+true_distance = 10; % True distance to the obstacle (meters)
+sensor_noise_mean = 0; % Mean of the sensor noise (meters)
+sensor_noise_std = 0.5; % Standard deviation of the sensor noise (meters)
+num_measurements = 100; % Number of measurements to simulate
+
+% Preallocate array for measurements
+measurements = zeros(1, num_measurements);
+
+% Simulate measurements
+for i = 1:num_measurements
+    % Generate a noisy measurement
+    noise = normrnd(sensor_noise_mean, sensor_noise_std); % Gaussian noise
+    measurements(i) = true_distance + noise; % Noisy measurement
+end
+
+% Calculate mean and standard deviation of measurements
+mean_measurement = mean(measurements);
+std_measurement = std(measurements);
+
+% Display results
+fprintf('True Distance: %.2f m\n', true_distance);
+fprintf('Mean Measurement: %.2f m\n', mean_measurement);
+fprintf('Standard Deviation of Measurements: %.2f m\n', std_measurement);
+
+% Plot the measurements
+figure;
+histogram(measurements, 'Normalization', 'pdf');
+hold on;
+
+% Plot Gaussian distribution based on mean and std
+x = linspace(min(measurements), max(measurements), 100);
+pdf = normpdf(x, mean_measurement, std_measurement);
+plot(x, pdf, 'r-', 'LineWidth', 2);
+xlabel('Distance (m)');
+ylabel('Probability Density');
+title('Histogram of Noisy Range Measurements');
+legend('Measured Data', 'Gaussian Fit');
+grid on;
+
+4. EKF
+
+clear; clc;
+x = [0; 0; 0]; P = eye(3); % State [x, y, theta] and covariance
+landmark = [5; 5];         % Known landmark position
+Q = 0.01 * eye(3); R = 0.1 * eye(2); % Process and measurement noise
+dt = 0.1; grid_limit = 10; % Time step and grid limits [-10, 10]
+threshold = 0.1; % Distance threshold to stop
+
+tic; % Start timer
+while toc < 30  % Loop for 30 seconds or until reaching the target
+    % Calculate direction to landmark and set control inputs
+    dx = landmark(1) - x(1);
+    dy = landmark(2) - x(2);
+    distance_to_target = sqrt(dx^2 + dy^2);
+    
+    % Check if the robot is close enough to the landmark
+    if distance_to_target < threshold
+        disp('Reached the target.');
+        break;
+    end
+    
+    % Calculate the desired angle and error
+    desired_angle = atan2(dy, dx);
+    angle_error = desired_angle - x(3);
+    angle_error = atan2(sin(angle_error), cos(angle_error)); % Normalize angle error
+    
+    % Control law: linear velocity and proportional angular velocity
+    u = [1; 2 * angle_error]; % Increase proportional gain if needed
+    
+    % Predict step with boundary checks
+    x_new = x + [u(1) * cos(x(3)) * dt; u(1) * sin(x(3)) * dt; u(2) * dt];
+    x_new(1:2) = max(min(x_new(1:2), grid_limit), -grid_limit); % Keep inside grid
+    x = x_new;
+    P = eye(3) * P * eye(3)' + Q;
+    
+    % Simulate measurement (range and bearing to the landmark)
+    z = [distance_to_target; desired_angle - x(3)] + R * randn(2,1); 
+    
+    % Update step
+    H = [-dx/distance_to_target, -dy/distance_to_target, 0; 
+          dy/(dx^2+dy^2), -dx/(dx^2+dy^2), -1];
+    K = P * H' / (H * P * H' + R); % Kalman gain
+    x = x + K * (z - [distance_to_target; desired_angle - x(3)]); 
+    P = (eye(3) - K * H) * P;
+    
+    % Plot robot and landmark
+    plot(x(1), x(2), 'bo', landmark(1), landmark(2), 'rx'); axis([-10 10 -10 10]);
+    hold on; pause(0.1); 
+end
+
+5. Indoor Environment
+
+% Define grid size (10x10 grid)
+gridSize = 10;
+
+% Create a binary occupancy grid (0 = free space, 1 = occupied space)
+environment = zeros(gridSize, gridSize);
+
+% Add walls (set edges as walls)
+environment(1, :) = 1; % Top wall
+environment(end, :) = 1; % Bottom wall
+environment(:, 1) = 1; % Left wall
+environment(:, end) = 1; % Right wall
+
+% Add a door on the bottom wall (at position 5)
+environment(end, 5) = 0; % Free space for the door
+
+% Add a small table (2x2 block)
+environment(4:5, 4:5) = 1;
+
+% Plot the occupancy grid
+figure;
+imagesc(environment);
+colormap(gray); % Set color map to grayscale
+colorbar; % Show color bar
+axis equal; % Keep aspect ratio
+title('Simple 2D Indoor Map'); % Title for the plot
+xlabel('X-axis (Grid)'); % X-axis label
+ylabel('Y-axis (Grid)'); % Y-axis label
+grid on; % Show grid
+
+6. Navigation of Drone using ROS
+
+clear ros2node
+node = ros2node("/matlab_node");
+posPub = ros2publisher(node, '/drone/position', 'geometry_msgs/Point');
+pause(0.5);
+t = 0:0.1:10;
+mass = 1.5; force = [0; 0; 14.7]; accel = force' / mass;
+position = [10, 5, 100]; velocity = [1, 1, 0]; u = [0; 0; 0];
+ekf = extendedKalmanFilter(@stateTransitionFcn, @measurementFcn, [position, velocity]);
+dronePosition = zeros(length(t), 3); estimatedStateHistory = zeros(length(t), 6);
+for i = 1:length(t)
+    predict(ekf, u);
+    measuredPosition = getROSPosition();
+    estimatedState = correct(ekf, measuredPosition);
+    dronePosition(i, :) = position;
+    estimatedStateHistory(i, :) = estimatedState;
+    position = position + velocity * 0.1;
+    velocity = velocity + accel * 0.1;
+    posMsg = ros2message('geometry_msgs/Point');
+    [posMsg.x, posMsg.y, posMsg.z] = deal(position(1), position(2), position(3));
+    send(posPub, posMsg);
+end
+% Plotting
+figure; plot3(dronePosition(:,1), dronePosition(:,2), dronePosition(:,3), '-o');
+xlabel('X'), ylabel('Y'), zlabel('Z'), grid on, title('Drone 3D Trajectory');
+figure;
+subplot(3,1,1), plot(t, dronePosition(:,1), t, estimatedStateHistory(:,1)), xlabel('Time'), ylabel('X');
+subplot(3,1,2), plot(t, dronePosition(:,2), t, estimatedStateHistory(:,2)), xlabel('Time'), ylabel('Y');
+subplot(3,1,3), plot(t, dronePosition(:,3), t, estimatedStateHistory(:,3)), xlabel('Time'), ylabel('Z');
+figure;
+subplot(3,1,1), plot(t, estimatedStateHistory(:, 4)), xlabel('Time'), ylabel('X Velocity');
+subplot(3,1,2), plot(t, estimatedStateHistory(:, 5)), xlabel('Time'), ylabel('Y Velocity');
+subplot(3,1,3), plot(t, estimatedStateHistory(:, 6)), xlabel('Time'), ylabel('Z Velocity');
+function z = getROSPosition()
+    persistent posSub nodeInitialized latestPosMsg
+    if isempty(nodeInitialized)
+        node = ros2node("/measurement_node");
+        posSub = ros2subscriber(node, '/drone/position', 'geometry_msgs/Point');
+        nodeInitialized = true;
+    end
+    try
+        posMsg = receive(posSub, 1);
+        latestPosMsg = posMsg;
+    catch
+    end
+    if ~isempty(latestPosMsg)
+        z = [latestPosMsg.x, latestPosMsg.y, latestPosMsg.z];
+    else
+        z = [0, 0, 0]; % Fallback if no message is received
+    end
+end
+function xNext = stateTransitionFcn(x, u)
+    dt = 0.1; 
+    A = [eye(3), dt*eye(3); zeros(3), eye(3)];
+    B = [zeros(3); eye(3)];
+    xNext = A * x + B * u;
+end
+function z = measurementFcn(x)
+    z = x(1:3);
+end
+
+7. Monte Carlo
+
+% MATLAB code for Adaptive Monte Carlo Localization (AMCL) using Particle Filter
+close all;
+clear all;
+clc;
+num_particles = 500; dt = 0.1; max_particles = 1000; min_particles = 100;
+v = 1; omega = 0.1; R = diag([0.2, 0.1]); Q = diag([0.1, 0.1, 0.05]);
+landmarks = [5, 5; -5, 5; -5, -5; 5, -5];
+particles = repmat([0; 0; 0], 1, num_particles) + [randn(2, num_particles); randn(1, num_particles) * 0.1];
+weights = ones(1, num_particles) / num_particles;
+
+% ROS setup
+clear ros2node
+node = ros2node("/matlab_node");
+posPub = ros2publisher(node, '/drone/position', 'geometry_msgs/Point');
+pause(0.5);
+
+for t = 1:100
+    % Prediction Step
+    particles = particles + [v * cos(particles(3, :)) * dt + Q(1, 1) * randn(1, num_particles);
+                             v * sin(particles(3, :)) * dt + Q(2, 2) * randn(1, num_particles);
+                             omega * dt + Q(3, 3) * randn(1, num_particles)];
+    
+    % Measurement Update Step
+    for i = 1:num_particles
+        weight = 1;
+        for j = 1:size(landmarks, 1)
+            dx = landmarks(j, 1) - particles(1, i);
+            dy = landmarks(j, 2) - particles(2, i);
+            z = [sqrt(dx^2 + dy^2); atan2(dy, dx) - particles(3, i)] + R * randn(2, 1);
+            expected = [sqrt(dx^2 + dy^2); atan2(dy, dx) - particles(3, i)];
+            weight = weight * exp(-0.5 * (z - expected)' * inv(R) * (z - expected));
+        end
+        weights(i) = weight;
+    end
+    weights = weights / sum(weights);
+    
+    % Resampling Step
+    indices = randsample(1:num_particles, num_particles, true, weights);
+    particles = particles(:, indices);
+    
+    % Adaptive Particle Count
+    spread = mean(sum((particles(1:2, :) - mean(particles(1:2, :), 2)).^2, 1));
+    if spread > 5
+        num_particles = min(max_particles, round(num_particles * 1.5));
+    elseif spread < 1
+        num_particles = max(min_particles, round(num_particles * 0.75));
+    end
+    
+    % Re-initialize particles if necessary
+    if num_particles ~= size(particles, 2)
+        particles = repmat([0; 0; 0], 1, num_particles) + [randn(2, num_particles); randn(1, num_particles) * 0.1];
+        weights = ones(1, num_particles) / num_particles;
+    end
+    
+    % Visualization and ROS publication
+    clf;
+    % Plot the landmarks in green
+    plot(landmarks(:, 1), landmarks(:, 2), 'go', 'MarkerSize', 10, 'LineWidth', 4);
+    hold on;
+    % Plot the particles in red
+    plot(particles(1, :), particles(2, :), 'r.', 'MarkerSize', 5);
+    % Plot the estimated mean position in blue
+    plot(mean(particles(1, :)), mean(particles(2, :)), 'bo', 'MarkerSize', 15, 'LineWidth', 4);
+    % Set plot title and axis limits
+    title('Adaptive Particle Filter Localization');
+    axis([-10 10 -10 10]);
+    drawnow;
+    
+    % ROS publication of the estimated position
+    posMsg = ros2message('geometry_msgs/Point');
+    [posMsg.x, posMsg.y, posMsg.z] = deal(mean(particles(1, :)), mean(particles(2, :)), 0);
+    send(posPub, posMsg);
+    pause(0.1);
+end
+
+
+
+Viva Questions
+
+
+Here are some basic viva questions with answers based on the lab questions you provided:
+
+---
+
+### 1. **Velocity-Based Navigation for Differential Wheeled Robot**
+   - **Q1:** What is a differential wheeled robot?
+     - **A:** A differential wheeled robot has two independently controlled wheels, allowing it to navigate by adjusting the speed of each wheel separately.
+  
+   - **Q2:** Why do we use the robot's kinematic model in velocity-based navigation?
+     - **A:** The kinematic model describes the robot’s motion constraints, allowing us to control the robot’s velocity and direction based on wheel speeds.
+
+   - **Q3:** What are some common challenges in velocity-based navigation?
+     - **A:** Challenges include obstacle avoidance, accurate speed control, and managing wheel slip or inaccuracies in the motion model.
+
+---
+
+### 2. **Odometry-Based Navigation**
+   - **Q1:** What is odometry, and how does it work in a robot?
+     - **A:** Odometry is a method for estimating a robot's position based on wheel rotations or encoder data. It helps determine the robot’s movement by integrating changes in position over time.
+
+   - **Q2:** What are the limitations of odometry?
+     - **A:** Odometry accumulates errors over time, especially due to wheel slip, inaccuracies in wheel radius, or uneven surfaces, leading to "drift."
+
+   - **Q3:** How can odometry errors be corrected?
+     - **A:** Odometry errors can be minimized by fusing it with sensor data like GPS, LiDAR, or visual information, or by using a more advanced localization algorithm such as Kalman filtering.
+
+---
+
+### 3. **Probabilistic Range Sensor Model**
+   - **Q1:** Why is a probabilistic model important for range sensors?
+     - **A:** Probabilistic models account for measurement noise and uncertainty in sensor data, which improves reliability in detecting obstacles or environment features.
+
+   - **Q2:** What are the main sources of noise in range sensors?
+     - **A:** Noise can come from sensor inaccuracies, environmental factors (like reflections or shadows), and inherent sensor limitations.
+
+   - **Q3:** Can you name a probabilistic model commonly used for range sensors?
+     - **A:** The Gaussian distribution is commonly used to represent measurement uncertainty, but more complex models like the Beam Model are also used in robotics.
+
+---
+
+### 4. **Extended Kalman Filter (EKF) SLAM**
+   - **Q1:** What does EKF-SLAM stand for?
+     - **A:** EKF-SLAM stands for Extended Kalman Filter Simultaneous Localization and Mapping. It allows a robot to build a map of its surroundings while simultaneously estimating its position within that map.
+
+   - **Q2:** What is the main purpose of using an Extended Kalman Filter in SLAM?
+     - **A:** The EKF helps manage uncertainty in both the robot’s position and the location of mapped features by predicting and updating with sensor data, handling non-linearities.
+
+   - **Q3:** What are the challenges of EKF-SLAM?
+     - **A:** Challenges include computational complexity, handling dynamic environments, and managing large maps with many landmarks.
+
+---
+
+### 5. **2D Representation of Indoor Environments**
+   - **Q1:** What is an occupancy grid map?
+     - **A:** An occupancy grid map divides a 2D space into grid cells, each cell representing either free space, an obstacle, or unknown space.
+
+   - **Q2:** Why are grid maps useful in robotics?
+     - **A:** Grid maps are simple yet effective for path planning and obstacle avoidance, allowing robots to make real-time navigation decisions.
+
+   - **Q3:** What kind of sensors are typically used to create these maps?
+     - **A:** Sensors like LiDAR, sonar, and stereo cameras are used to detect obstacles and build occupancy grids.
+
+---
+
+### 6. **Drone Navigation in 3D with ROS and MATLAB**
+   - **Q1:** Why is ROS used in drone navigation?
+     - **A:** ROS (Robot Operating System) provides a framework for communication, sensor data handling, and visualization, which are essential for autonomous navigation.
+
+   - **Q2:** What are waypoints in navigation?
+     - **A:** Waypoints are predefined points in space that the drone must reach as part of its path.
+
+   - **Q3:** How does MATLAB complement ROS in this system?
+     - **A:** MATLAB can be used for developing control algorithms and tuning parameters, while ROS handles simulation and real-time data.
+
+---
+
+### 7. **Adaptive Monte Carlo Localization (AMCL)**
+   - **Q1:** What is Monte Carlo Localization (MCL)?
+     - **A:** MCL uses particle filters to estimate a robot's position by generating random samples (particles) and weighting them based on sensor data.
+
+   - **Q2:** What does the "adaptive" part mean in AMCL?
+     - **A:** In AMCL, the number of particles adjusts based on the certainty of the robot's position, using fewer particles in high-certainty situations and more in low-certainty ones.
+
+   - **Q3:** Why might you use AMCL over basic MCL?
+     - **A:** AMCL can save computational resources while maintaining accuracy by dynamically adjusting particle count.
+
+---
+
+### 8. **LiDAR-Based Autonomous Navigation**
+   - **Q1:** How does LiDAR help in robot navigation?
+     - **A:** LiDAR provides distance measurements to obstacles, allowing the robot to create a map of its surroundings and detect obstacles in real-time.
+
+   - **Q2:** Why use ROS for LiDAR data processing?
+     - **A:** ROS offers packages for handling LiDAR data, such as point cloud processing and real-time visualization, which are essential for autonomous navigation.
+
+   - **Q3:** What are some challenges of using LiDAR data for navigation?
+     - **A:** Challenges include handling sensor noise, processing large data volumes, and navigating in dynamic environments where obstacles may move.
+
+---
+
+These questions should help you prepare for viva based on understanding each project's fundamental concepts and challenges.
