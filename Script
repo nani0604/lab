@@ -1,0 +1,282 @@
+HIDDENFRAME GET 
+
+DISPFACT.JSP
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Account Information</title>
+    <script type="text/javascript">
+        function requestCustomerInfo() {
+            var sId = document.getElementById("txtCustomerId").value;
+            top.frames["hiddenFrame"].location = "faact.jsp?id=" + sId;
+        }
+        
+        function displayCustomerInfo(sText) {
+            var divCustomerInfo = document.getElementById("divCustomerInfo");
+            divCustomerInfo.innerHTML = sText;
+        }
+  
+    </script>
+</head>
+<body>
+    <p>Enter a number to find factorial:</p>
+    <p>Factorial: <input type="text" id="txtCustomerId" value="" /></p>
+    <p><input type="button" value="Get Customer Info" onclick="requestCustomerInfo()" /></p>
+    <div id="divCustomerInfo"></div>
+</body>
+</html>
+
+
+
+fact.jsp
+
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
+<!DOCTYPE html >
+<html  >
+    <head>
+        <title>Get Customer Data</title>
+        <script type="text/javascript">
+            window.onload = function () {
+                var divInfoToReturn = document.getElementById("divInfoToReturn");
+				//document.write("gg");
+                top.frames["displayFrame"].displayCustomerInfo(divInfoToReturn.innerHTML);        
+            };
+        
+        </script>    
+    </head>
+    <body>
+<%!
+   int getCustomerData(int id){                
+    
+        
+
+            int fact=1;
+			int i;
+			for( i=1;i<=id;i++)
+			{
+				fact=fact*i;
+			}
+return fact;			
+        }
+        
+            
+%>
+<%
+        String strId = request.getParameter("id");
+        int id = -1;
+        int  message ;
+
+        try {
+            id = Integer.parseInt(strId);
+			
+             message = getCustomerData(id);
+			 
+			 
+        } catch (Exception ex) {
+            message = 0;
+        }
+%>
+<p>jhj</p>
+        <div id="divInfoToReturn"><%= message %></div>
+		<p>sdda</p>
+    </body>
+</html>
+
+
+getfact.jsp
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hidden Frame GET Example</title>
+</head>
+<frameset rows="100%,0" style="border: 0px">
+    <frame name="displayFrame" src="dispfact.jsp" noresize="noresize" />
+    <frame name="hiddenFrame" src="about:blank" noresize="noresize" />
+</frameset>
+</html>
+
+
+---------------------------------------------------------------------------------------
+
+hiddenframe post
+
+dataentry.jsp
+
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>Create New Customer</title>
+    <script type="text/javascript">//<![CDATA[
+           
+        function saveResult(sMessage) {
+            var divStatus = document.getElementById("divStatus");
+            divStatus.innerHTML = "Request completed: " + sMessage;            
+        }
+    //]]>
+    </script>    
+</head>
+<body>
+    <form method="post" action="SaveCustomer.jsp" target="hiddenFrame">
+    <p>Enter customer information to be saved:</p>
+    <p>Customer Name: <input type="text" name="name" value="" /><br />
+    Address: <input type="text" name="address" value="" /><br />
+    </p>
+    <p><input type="submit" value="Save Customer Info" /></p>
+    </form>
+    <div id="divStatus"></div>
+</body>
+</html>
+HIDDENFRAME POST EXAMPE .JSP
+
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<!DOCTYPE html> 
+<html>
+<head>
+    <title>Hidden Frame POST Example</title>
+</head>
+<frameset rows="100%,0" style="border: 0px">
+    <frame name="displayFrame" src="DataEntry.jsp" noresize="noresize" style="border: 0px" />
+    <frame name="hiddenFrame" src="about:blank" noresize="noresize" style="border: 0px" />
+</frameset>
+</html>
+
+
+savecustomer.jsp
+
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<%@ page import="java.io.BufferedWriter.*" %>
+<%@ page import="java.io.FileWriter.*" %>
+
+<%@ page import="java.io.*" %>
+
+<!DOCTYPE html >
+<html  >
+    <head>
+        <title>Create New Customer</title>
+<%
+   //get information (replace apostrophes with double apostrophes to prevent SQL injection attacks)
+    String name = request.getParameter("name");
+    String address = request.getParameter("address");
+       String message="";      
+    try {
+        
+        FileWriter writer = new FileWriter("E://ss.txt", true);
+        BufferedWriter bufferedWriter = new BufferedWriter(writer);
+        bufferedWriter.append(name + address);
+        bufferedWriter.close();  
+		message="Success";		
+        
+    } catch (Exception ex){
+        message = "Error occurred while trying to connect to database: " + ex.getMessage();
+    }        
+
+%>      
+        <script type="text/javascript">
+            window.onload = function () {
+                top.frames["displayFrame"].saveResult("<%= message %>");        
+            }
+      
+        </script>     
+    </head>
+    <body>
+        
+    </body>
+</html>
+
+
+
+
+
+
+HIDDENINLINEFRAME GET
+-------------------------------------------------------------------
+
+GETCUSTOMERDATA.JSP
+
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<%@ page import="java.io.*" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+    <head>
+        <title>Get Customer Data</title>
+        <script type="text/javascript">//<![CDATA[
+            window.onload = function () {
+                var divInfoToReturn = document.getElementById("divInfoToReturn");
+                parent.displayCustomerInfo(divInfoToReturn.innerHTML);        
+            };
+        //]]>
+        </script>    
+    </head>
+    <body>
+<%!
+    String getCustomerData(){                
+           File file = new File("C://xampp//tomcat//webapps//ROOT//HiddenInlineIFrameGETExample//test.txt");
+ 
+        try (BufferedReader br = new BufferedReader(new FileReader(file)))
+        {
+            String line,line1="";
+            while ((line = br.readLine()) != null) {
+               line1+=line; 
+            }
+			return line1;
+        } catch (IOException e) {
+            e.printStackTrace(); return "xx";
+        }
+    }        
+%>
+<%
+        String strId = request.getParameter("id");
+        int id = -1;
+        String message = "";
+
+        try {
+           // id = Integer.parseInt(strId);
+            message = getCustomerData();
+        } catch (Exception ex) {
+            message = "Invalid customer ID.";
+        }
+%>
+        <div id="divInfoToReturn"><%= message %></div>
+    </body>
+</html>
+
+HIDDEN INLINEFRAME GET EXAMPLE .JSP
+
+<%@page contentType="text/html"%>
+<%@page pageEncoding="UTF-8"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Hidden Inline IFrame GET Example</title>
+    <script type="text/javascript">
+        function requestCustomerInfo() {
+            var sId = document.getElementById("txtCustomerId").value;
+            top.frames["hiddenFrame"].location = "GetCustomerData.jsp?id=" + sId;
+        }
+        
+        function displayCustomerInfo(sText) {
+            var divCustomerInfo = document.getElementById("divCustomerInfo");
+            divCustomerInfo.innerHTML = sText;
+        }
+  
+    </script>
+</head>
+<body>
+    <p>Enter customer ID number to retrieve information:</p>
+    <p>Customer ID: <input type="text" id="txtCustomerId" value="" /></p>
+    <p><input type="button" value="Get Customer Info" onclick="requestCustomerInfo()" /></p>
+    <div id="divCustomerInfo"></div>
+    <iframe src="about:blank" name="hiddenFrame" style="display: none"></iframe>
+</body>
+</html>
